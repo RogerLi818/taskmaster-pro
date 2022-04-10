@@ -1,5 +1,23 @@
 var tasks = {};
 
+var auditTask = function(taskEl){
+  //get date from task element
+  var date=$(taskEl).find("span").text().trim();
+  //convert to moment object at 5:00pm
+  var time=moment(date, "L").set("hour", 17);
+
+  //remove any old classes from element
+  $(taskEl).removeClass("list-group-item-warning list-group-item-danger");
+
+  //apply new class if task is near/over due date
+  if (moment().isAfter(time)){
+    $(taskEl).addClass("list-group-item-danger")
+  }
+  else if (Math.abs(moment().diff(time,"days"))<=2){
+    $(taskEl).addClass("list-group-item-warning");
+  }
+};
+
 var createTask = function(taskText, taskDate, taskList) {
   // create elements that make up a task item
   var taskLi = $("<li>").addClass("list-group-item");
@@ -13,6 +31,8 @@ var createTask = function(taskText, taskDate, taskList) {
   // append span and p element to parent li
   taskLi.append(taskSpan, taskP);
 
+  //check due date
+  auditTask(taskLi);
 
   // append to ul list on the page
   $("#list-" + taskList).append(taskLi);
@@ -91,7 +111,6 @@ $(".list-group").on("blur","textarea",function(){
 //due date was clicked
 $(".list-group").on("click","span", function(){
   
-
   //get current text
   var date = $(this)
     .text()
@@ -103,11 +122,21 @@ $(".list-group").on("click","span", function(){
   .val(date);
   //swap out elements
   $(this).replaceWith(dateInput);
+
+  //enable jquery ui datepicker
+  dateInput.datepicker({
+    minDate:0,
+    onClose:function(){
+      //when calendar is lcosed, force a "change" event on the 'dateInput'
+      $(this).trigger("change")
+    }
+  });
+
   //automaticlly focus on new element
   dateInput.trigger("focus");
 })
 
-$(".list-group").on("blur","input[type='text']",function(){
+$(".list-group").on("change","input[type='text']",function(){
   //get current text
   var date = $(this)
   .val()
@@ -135,6 +164,9 @@ $(".list-group").on("blur","input[type='text']",function(){
 
   //replace input with span element
   $(this).replaceWith(taskSpan);
+
+  //Pass task's <li> element into auditTask() to check new due date
+  auditTask($(taskSpan).closest(".list-group-item"));
 });
 
 
@@ -250,6 +282,10 @@ $("#trash").droppable({
   out:function(event,ui){
     console.log("out");
   }
+});
+
+$("#modalDueDate").datepicker({
+  minDate:0
 });
 
 
